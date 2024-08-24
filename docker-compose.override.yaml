@@ -1,0 +1,72 @@
+services:
+  certbot:
+    image: certbot/dns-cloudflare
+
+    # Dry Run
+    # command: certonly --non-interactive --dns-cloudflare --dns-cloudflare-credentials /run/secrets/cf_credentials --agree-tos --email admin@nordicaussie.com -d *.nordicaussie.com --server https://acme-v02.api.letsencrypt.org/directory --dry-run
+
+    # Issue certificate
+    # command: certonly --non-interactive --dns-cloudflare --dns-cloudflare-credentials /run/secrets/cf_credentials --agree-tos --email admin@nordicaussie.com -d *.nordicaussie.com --server https://acme-v02.api.letsencrypt.org/directory
+
+    # Renew certificate
+    command: renew --non-interactive --no-self-upgrade --dns-cloudflare --dns-cloudflare-credentials /run/secrets/cf_credentials --agree-tos --email admin@nordicaussie.com --server https://acme-v02.api.letsencrypt.org/directory
+
+    volumes:
+      - ./certs/:/etc/letsencrypt
+      - ./letsencrypt/log:/var/log/letsencrypt
+    secrets:
+      - cf_credentials
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    networks:
+      - socket_proxy
+      - backend
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      DOCKER_HOST: tcp://socket-proxy:2375
+      # WATCHTOWER_LABEL_ENABLE: true
+      WATCHTOWER_NOTIFICATIONS: gotify
+      WATCHTOWER_NOTIFICATION_GOTIFY_URL: "https://notify.local.nordicaussie.com/"
+      WATCHTOWER_NOTIFICATION_GOTIFY_TOKEN: $WATCHTOWER_NOTIFICATION_GOTIFY_TOKEN
+      # WATCHTOWER_DEBUG: true
+  gotify:
+    container_name: gotify
+    image: gotify/server:latest
+    networks:
+      - backend
+    ports:
+      - 8089:80
+      - 8449:443
+    environment:
+      - GOTIFY_DEFAULTUSER_PASS=$GOTIFY_DEFAULT_PASS
+      - GOTIFY_DEFAULTUSER_NAME=$GOTIFY_DEFAULT_NAME
+    volumes:
+      - "./gotify_data:/app/data"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+  igotify:
+    container_name: igotify
+    hostname: igotify
+    image: ghcr.io/androidseb25/igotify-notification-assist:latest
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+    ports:
+      - "8090:8080"
+    volumes:
+      - ./api-data:/app/data
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment: # option environment see above note
+      GOTIFY_URLS: "http://gotify"
+      GOTIFY_CLIENT_TOKENS: $GOTIFY_CLIENT_TOKENS
+      # SECNTFY_TOKENS: ""
+
+secrets:
+  cf_credentials:
+    file: ./cloudflare/credentials
