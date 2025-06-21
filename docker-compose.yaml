@@ -176,6 +176,9 @@ services:
   authentik_ldap:
     image: ghcr.io/goauthentik/ldap
     container_name: authentik-ldap
+    security_opt:
+      - no-new-privileges:true
+    restart: always
     networks:
       - backend
       - frontend
@@ -189,6 +192,24 @@ services:
       AUTHENTIK_TOKEN: $AUTHENTIK_LDAP_OUTPOST_TOKEN
     env_file:
       - .env
+    depends_on:
+      server:
+        condition: service_healthy
+    labels:
+      - "deunhealth.restart.on.unhealthy=true"
+  deunhealth:
+    security_opt:
+      - no-new-privileges:true
+    image: qmcgaw/deunhealth
+    container_name: deunhealth
+    network_mode: "none"
+    environment:
+      - LOG_LEVEL=info
+      - HEALTH_SERVER_ADDRESS=127.0.0.1:9999
+      - TZ=$TZ
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 volumes:
   database:
     driver: local

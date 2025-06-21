@@ -9,6 +9,7 @@ cloudflare/
 custom-templates/
 gotify_data/
 letsencrypt/
+gitlab/
 
 ### Linux ###
 *~
