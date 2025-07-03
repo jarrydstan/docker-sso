@@ -1,2 +1,2 @@
 config for docker compose with authentik and gotify
-added gitlab
+added gitlab and watchtower
