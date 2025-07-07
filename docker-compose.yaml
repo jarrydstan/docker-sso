@@ -102,7 +102,7 @@ services:
     volumes:
       - redis:/data
   server:
-    image: ghcr.io/goauthentik/server:latest
+    image: ghcr.io/goauthentik/server:2025.4
     container_name: authentik-sv
     restart: unless-stopped
     command: server
@@ -140,7 +140,7 @@ services:
     # labels:
     #   - com.centurylinklabs.watchtower.enable
   worker:
-    image: ghcr.io/goauthentik/server:latest
+    image: ghcr.io/goauthentik/server:2025.4
 
     container_name: authentik-work
     restart: unless-stopped
