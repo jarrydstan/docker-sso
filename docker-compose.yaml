@@ -63,7 +63,7 @@ services:
       - SERVICES=1
       - SESSION=0
       - SWARM=0
-      - SYSTEM=0
+      - SYSTEM=1
       - TASKS=1
       - VOLUMES=1
   postgresql:
