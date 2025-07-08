@@ -10,6 +10,7 @@ custom-templates/
 gotify_data/
 letsencrypt/
 gitlab/
+current_email/
 
 ### Linux ###
 *~
