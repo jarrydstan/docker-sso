@@ -102,7 +102,7 @@ services:
     volumes:
       - redis:/data
   server:
-    image: ghcr.io/goauthentik/server:2025.4
+    image: ghcr.io/goauthentik/server:2025.6
     container_name: authentik-sv
     restart: unless-stopped
     command: server
@@ -140,7 +140,7 @@ services:
     # labels:
     #   - com.centurylinklabs.watchtower.enable
   worker:
-    image: ghcr.io/goauthentik/server:2025.4
+    image: ghcr.io/goauthentik/server:2025.6
 
     container_name: authentik-work
     restart: unless-stopped
@@ -173,30 +173,30 @@ services:
       - postgresql
       - redis
 
-  authentik_ldap:
-    image: ghcr.io/goauthentik/ldap
-    container_name: authentik-ldap
-    security_opt:
-      - no-new-privileges:true
-    restart: always
-    networks:
-      - backend
-      - frontend
-      - socket_proxy
-    ports:
-      - 389:3389
-      # - 636:6636
-    environment:
-      AUTHENTIK_HOST: https://login.nordicaussie.com
-      AUTHENTIK_INSECURE: "false"
-      AUTHENTIK_TOKEN: $AUTHENTIK_LDAP_OUTPOST_TOKEN
-    env_file:
-      - .env
-    depends_on:
-      server:
-        condition: service_healthy
-    labels:
-      - "deunhealth.restart.on.unhealthy=true"
+  # authentik_ldap:
+  #   image: ghcr.io/goauthentik/ldap
+  #   container_name: authentik-ldap
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   restart: always
+  #   networks:
+  #     - backend
+  #     - frontend
+  #     - socket_proxy
+  #   ports:
+  #     - 389:3389
+  #     # - 636:6636
+  #   environment:
+  #     AUTHENTIK_HOST: https://login.nordicaussie.com
+  #     AUTHENTIK_INSECURE: "false"
+  #     AUTHENTIK_TOKEN: $AUTHENTIK_LDAP_OUTPOST_TOKEN
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     server:
+  #       condition: service_healthy
+  #   labels:
+  #     - "deunhealth.restart.on.unhealthy=true"
   deunhealth:
     security_opt:
       - no-new-privileges:true
