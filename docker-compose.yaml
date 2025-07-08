@@ -124,6 +124,8 @@ services:
       - AUTHENTIK_POSTGRESQL__NAME=${PG_DB}
       - AUTHENTIK_ERROR_REPORTING__ENABLED=true
       - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
+      - AUTHENTIK_COOKIE_DOMAIN=login.nordicaussie.com
+      - AUTHENTIK_LOG_LEVEL=debug
     env_file:
       - .env
     volumes:
@@ -133,7 +135,9 @@ services:
       - ./css/custom.css:/web/dist/custom.css
       # - ./email/:/authentik/stages/email/templates/email/
       - ./images/logo-banner.png:/web/icons/icon_left_brand.png
-      - ./email/base.html:/authentik/stages/email/templates/email/base.html
+      # - ./email/base.html:/authentik/stages/email/templates/email/base.html
+      - ./current_email/:/authentik/stages/email/templates/email/
+      # - ./current_email/:/authentik/stages/email/templates/email/
     depends_on:
       - postgresql
       - redis

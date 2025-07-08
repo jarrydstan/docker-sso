@@ -13,6 +13,7 @@ services:
       LISTEN: 45876
       KEY: $BESZEL_KEY
   certbot:
+    container_name: certbot
     image: certbot/dns-cloudflare
 
     # Dry Run
