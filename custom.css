@@ -1,0 +1,70 @@
+/* ==================== COMMON ==================== */
+
+/* transparency effect */
+.pf-c-login__main.ak-flow-executor {
+    background: rgba(0, 0, 0, 0.7);
+
+    @media (prefers-color-scheme: light) {
+        background: rgba(255, 255, 255, 0.38);
+    }
+
+    backdrop-filter: blur(8.1px);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    -webkit-backdrop-filter: blur(8.1px);
+}
+
+/* ==================== LOGIN SCREEN ==================== */
+.pf-c-login__footer,
+.pf-c-login__main-footer-links.style-scope.ak-stage-identification {
+    display: none;
+}
+
+.ak-brand.ak-flow-executor img.ak-flow-executor {
+    padding: 0;
+}
+
+.pf-c-login__main.ak-flow-executor {
+    border-radius: 16px;
+}
+
+.pf-c-login__main-footer.ak-stage-identification>.ak-stage-identification {
+    padding-bottom: 3rem;
+}
+
+.pf-c-form-control.ak-stage-identification,
+.pf-c-login__main-footer.ak-stage-identification>.ak-stage-identification,
+.pf-c-form-control.ak-stage-prompt {
+    background: transparent;
+}
+
+.pf-c-drawer__body>.pf-c-page__main {
+    background-image: url("/media/public/flow-backgrounds/poc1_6THNqmW.png");
+}
+
+/* ==================== DASHBOARD ==================== */
+
+a.pf-c-page__header-brand-link {
+    flex: 1 0 auto;
+
+    img {
+        box-sizing: border-box;
+        content: url("/media/assets/logo-by-emily.png");
+        position: absolute;
+        height: 100%;
+        left: auto;
+
+        @media only screen and (min-width: 620px) {
+            content: unset;
+            left: -6px;
+        }
+    }
+}
+
+.pf-c-expandable-section {
+    background: transparent !important;
+    border-top: 0.5px solid var(--ak-dark-foreground-darker);
+
+    @media (prefers-color-scheme: light) {
+        border-color: var(--ak-dark-background-lighter);
+    }
+}
