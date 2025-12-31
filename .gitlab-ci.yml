@@ -1,7 +1,0 @@
-include:
-    - project: 'jarrydstanbrook/renovate-runner'
-      file: '/templates/renovate.gitlab-ci.yml'
-renovate:
-    rules:
-        - if: '$CI_PIPELINE_SOURCE == "schedule"'
-        - when: manual
