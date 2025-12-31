@@ -48,16 +48,16 @@ services:
       - VERSION=1
       - AUTH=0
       - SECRETS=0
-      - POST=1 
+      - POST=1
       - BUILD=0
       - COMMIT=0
       - CONFIGS=0
       - CONTAINERS=1
       - DISTRIBUTION=0
       - EXEC=0
-      - IMAGES=1 
-      - INFO=1 
-      - NETWORKS=1 
+      - IMAGES=1
+      - INFO=1
+      - NETWORKS=1
       - NODES=0
       - PLUGINS=0
       - SERVICES=1
@@ -67,45 +67,43 @@ services:
       - TASKS=1
       - VOLUMES=1
   postgresql:
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${PG_DB}
+      - POSTGRES_PASSWORD=${PG_PASS}
+      - POSTGRES_USER=${PG_USER}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 20s
+      test:
+        - CMD-SHELL
+        - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      timeout: 5s
     image: docker.io/library/postgres:16-alpine
     container_name: authentik-pg
     networks:
       - backend
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d $${PG_DB} -U $${PG_USER}"]
-      start_period: 20s
-      interval: 30s
-      retries: 5
-      timeout: 5s
     volumes:
       - database:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_PASSWORD=${PG_PASS}
-      - POSTGRES_USER=${PG_USER}
-      - POSTGRES_DB=${PG_DB}
+  server:
+    command: server
+    depends_on:
+      postgresql:
+        condition: service_healthy
     env_file:
       - .env
-  redis:
-    image: docker.io/library/redis:alpine
-    container_name: authentik-redis
-    command: --save 60 1 --loglevel warning
-    networks:
-      - backend
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
-      start_period: 20s
-      interval: 30s
-      retries: 5
-      timeout: 3s
-    volumes:
-      - redis:/data
-  server:
-    image: ghcr.io/goauthentik/server:2025.6
-    container_name: authentik-sv
-    restart: unless-stopped
-    command: server
+    environment:
+      - AUTHENTIK_POSTGRESQL__HOST=postgresql
+      - AUTHENTIK_POSTGRESQL__NAME=${PG_DB}
+      - AUTHENTIK_POSTGRESQL__PASSWORD=${PG_PASS}
+      - AUTHENTIK_POSTGRESQL__USER=${PG_USER}
+      - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
+      - AUTHENTIK_ERROR_REPORTING__ENABLED=true
+      - AUTHENTIK_COOKIE_DOMAIN=$AUTHENTIK_COOKIE_DOMAIN
+      - AUTHENTIK_LOG_LEVEL=info
     networks:
       frontend:
         ipv4_address: $AUTHENTIK_IP1
@@ -116,18 +114,7 @@ services:
     ports:
       - "9000:9000"
       - "9443:9443"
-    environment:
-      - AUTHENTIK_REDIS__HOST=redis
-      - AUTHENTIK_POSTGRESQL__HOST=postgresql
-      - AUTHENTIK_POSTGRESQL__PASSWORD=${PG_PASS}
-      - AUTHENTIK_POSTGRESQL__USER=${PG_USER}
-      - AUTHENTIK_POSTGRESQL__NAME=${PG_DB}
-      - AUTHENTIK_ERROR_REPORTING__ENABLED=true
-      - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
-      - AUTHENTIK_COOKIE_DOMAIN=$AUTHENTIK_COOKIE_DOMAIN
-      - AUTHENTIK_LOG_LEVEL=info
-    env_file:
-      - .env
+    restart: unless-stopped
     volumes:
       - ./certs/live/$ROOT_DOMAIN:/certs/$ROOT_DOMAIN
       - ./media:/media
@@ -138,42 +125,37 @@ services:
       # - ./email/base.html:/authentik/stages/email/templates/email/base.html
       - ./current_email/:/authentik/stages/email/templates/email/
       # - ./current_email/:/authentik/stages/email/templates/email/
-    depends_on:
-      - postgresql
-      - redis
+    image: ghcr.io/goauthentik/server:2025.10
+    container_name: authentik-sv
   worker:
-    image: ghcr.io/goauthentik/server:2025.6
-
-    container_name: authentik-work
-    restart: unless-stopped
     command: worker
-    networks:
-      - backend
-      - socket_proxy
-    environment:
-      - AUTHENTIK_REDIS__HOST=redis
-      - AUTHENTIK_POSTGRESQL__HOST=postgresql
-      - AUTHENTIK_POSTGRESQL__PASSWORD=${PG_PASS}
-      - AUTHENTIK_POSTGRESQL__USER=${PG_USER}
-      - AUTHENTIK_POSTGRESQL__NAME=${PG_DB}
-      - AUTHENTIK_ERROR_REPORTING__ENABLED=true
-      - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
+    depends_on:
+      postgresql:
+        condition: service_healthy
     env_file:
       - .env
+    environment:
+      - AUTHENTIK_POSTGRESQL__HOST=postgresql
+      - AUTHENTIK_POSTGRESQL__NAME=${PG_DB}
+      - AUTHENTIK_POSTGRESQL__PASSWORD=${PG_PASS}
+      - AUTHENTIK_POSTGRESQL__USER=${PG_USER}
+      - AUTHENTIK_ERROR_REPORTING__ENABLED=true
+      - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
+    image: ghcr.io/goauthentik/server:2025.10
+    restart: unless-stopped
     user: root
     volumes:
-      # - /var/run/docker.sock:/var/run/docker.sock
       - ./media:/media
       - ./certs/live/$ROOT_DOMAIN:/certs/$ROOT_DOMAIN
       - ./certs/archive/$ROOT_DOMAIN:/archive/$ROOT_DOMAIN
       - ./custom-templates:/templates
       - ./css/custom.css:/web/dist/custom.css
-      # - ./email/:/authentik/stages/email/templates/email/
       - ./images/logo-banner.png:/web/icons/icon_left_brand.png
       - ./email/base.html:/authentik/stages/email/templates/email/base.html
-    depends_on:
-      - postgresql
-      - redis
+    container_name: authentik-work
+    networks:
+      - backend
+      - socket_proxy
   deunhealth:
     security_opt:
       - no-new-privileges:true
