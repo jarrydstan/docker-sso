@@ -125,7 +125,7 @@ services:
       # - ./email/base.html:/authentik/stages/email/templates/email/base.html
       - ./current_email/:/authentik/stages/email/templates/email/
       # - ./current_email/:/authentik/stages/email/templates/email/
-    image: ghcr.io/goauthentik/server:2025.10
+    image: ghcr.io/goauthentik/server:2025.12
     container_name: authentik-sv
   worker:
     command: worker
@@ -141,7 +141,7 @@ services:
       - AUTHENTIK_POSTGRESQL__USER=${PG_USER}
       - AUTHENTIK_ERROR_REPORTING__ENABLED=true
       - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
-    image: ghcr.io/goauthentik/server:2025.10
+    image: ghcr.io/goauthentik/server:2025.12
     restart: unless-stopped
     user: root
     volumes:
