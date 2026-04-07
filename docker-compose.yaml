@@ -29,6 +29,12 @@ services:
   socket-proxy:
     container_name: socket-proxy
     image: tecnativa/docker-socket-proxy:v0.4.1
+    healthcheck:
+      test: "wget --spider http://localhost:2375/version"
+      interval: 30s
+      retries: 1
+      start_period: 1s
+      timeout: 10s
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
@@ -93,6 +99,8 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+      socket-proxy:
+        condition: service_healthy
     env_file:
       - .env
     environment:
@@ -115,6 +123,12 @@ services:
       - "9000:9000"
       - "9443:9443"
     restart: unless-stopped
+    healthcheck:
+      test: "curl http://localhost:9000/-/health/live"
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 10s
     volumes:
       - ./certs/live/$ROOT_DOMAIN:/certs/$ROOT_DOMAIN
       - ./media:/media
@@ -143,6 +157,8 @@ services:
       - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
     image: ghcr.io/goauthentik/server:2025.12
     restart: unless-stopped
+    healthcheck:
+      test: "ak healthcheck"
     user: root
     volumes:
       - ./media:/media
@@ -169,6 +185,73 @@ services:
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+  beszel-agent:
+    image: "henrygd/beszel-agent"
+    container_name: "beszel-agent"
+    restart: unless-stopped
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "./agent", "health"]
+      start_period: 5s
+      timeout: 10s
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/extra-filesystems/sda2:ro
+      - /home:/extra-filesystems/sda6:ro
+    environment:
+      LISTEN: 45876
+      KEY: $BESZEL_KEY
+  certbot:
+    container_name: certbot
+    image: certbot/dns-cloudflare
+
+    # Dry Run
+    # command: certonly --non-interactive --dns-cloudflare --dns-cloudflare-credentials /run/secrets/cf_credentials --agree-tos --email $ADMIN_EMAIL -d *.$ROOT_DOMAIN --server https://acme-v02.api.letsencrypt.org/directory --dry-run
+
+    # Issue certificate
+    # command: certonly --non-interactive --dns-cloudflare --dns-cloudflare-credentials /run/secrets/cf_credentials --agree-tos --email $ADMIN_EMAIL -d *.$ROOT_DOMAIN --server https://acme-v02.api.letsencrypt.org/directory
+
+    # Renew certificate
+    command: renew --non-interactive --dns-cloudflare --dns-cloudflare-credentials /run/secrets/cf_credentials --agree-tos --email $ADMIN_EMAIL --server https://acme-v02.api.letsencrypt.org/directory
+
+    volumes:
+      - ./certs/:/etc/letsencrypt
+      - ./letsencrypt/log:/var/log/letsencrypt
+    secrets:
+      - cf_credentials
+
+  # gitlab:
+  #   image: gitlab/gitlab-ce:latest
+  #   container_name: gitlab
+  #   shm_size: "256m"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "${GITLAB_URL}/-/health"]
+  #     retries: 3
+  #     start_period: 10s
+  #     timeout: 10s
+  #   ports:
+  #     - "2424:22"
+  #     - "80:80"
+  #   hostname: "gitlab"
+  #   environment:
+  #     GITLAB_OMNIBUS_CONFIG: |
+  #       external_url '$GITLAB_URL'
+  #       gitlab_rails['gitlab_shell_ssh_port'] = 2424
+  #       gitlab_rails['lfs_enabled'] = true
+  #       nginx['listen_port'] = 80
+  #       nginx['listen_https'] = false
+  #   volumes:
+  #     - ./gitlab/config:/etc/gitlab
+  #     - ./gitlab/logs:/var/log/gitlab
+  #     - ./gitlab/data:/var/opt/gitlab
+  #   networks:
+  #     - frontend
+  #   restart: unless-stopped
+
+secrets:
+  cf_credentials:
+    file: ./cloudflare/credentials
+
 volumes:
   database:
     driver: local
