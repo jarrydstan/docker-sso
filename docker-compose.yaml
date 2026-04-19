@@ -220,33 +220,37 @@ services:
     secrets:
       - cf_credentials
 
-  # gitlab:
-  #   image: gitlab/gitlab-ce:latest
-  #   container_name: gitlab
-  #   shm_size: "256m"
-  #   healthcheck:
-  #     test: ["CMD", "curl", "${GITLAB_URL}/-/health"]
-  #     retries: 3
-  #     start_period: 10s
-  #     timeout: 10s
-  #   ports:
-  #     - "2424:22"
-  #     - "80:80"
-  #   hostname: "gitlab"
-  #   environment:
-  #     GITLAB_OMNIBUS_CONFIG: |
-  #       external_url '$GITLAB_URL'
-  #       gitlab_rails['gitlab_shell_ssh_port'] = 2424
-  #       gitlab_rails['lfs_enabled'] = true
-  #       nginx['listen_port'] = 80
-  #       nginx['listen_https'] = false
-  #   volumes:
-  #     - ./gitlab/config:/etc/gitlab
-  #     - ./gitlab/logs:/var/log/gitlab
-  #     - ./gitlab/data:/var/opt/gitlab
-  #   networks:
-  #     - frontend
-  #   restart: unless-stopped
+  gitlab:
+    image: gitlab/gitlab-ce:18.10.3-ce.0
+    container_name: gitlab
+    shm_size: "512m"
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    healthcheck:
+      test: ["CMD", "curl", "${GITLAB_URL}/-/health"]
+      retries: 3
+      start_period: 10s
+      timeout: 10s
+    ports:
+      - "2424:22"
+      - "80:80"
+    hostname: "gitlab"
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url '$GITLAB_URL'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2424
+        gitlab_rails['lfs_enabled'] = true
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+    volumes:
+      - ./gitlab/config:/etc/gitlab
+      - ./gitlab/logs:/var/log/gitlab
+      - ./gitlab/data:/var/opt/gitlab
+    networks:
+      - frontend
+    restart: unless-stopped
 
 secrets:
   cf_credentials:
