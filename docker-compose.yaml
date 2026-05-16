@@ -28,7 +28,7 @@ networks:
 services:
   socket-proxy:
     container_name: socket-proxy
-    image: tecnativa/docker-socket-proxy:v0.4.1
+    image: tecnativa/docker-socket-proxy:v0.4.2
     healthcheck:
       test: "wget --spider http://localhost:2375/version"
       interval: 30s
