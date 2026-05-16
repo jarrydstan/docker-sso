@@ -221,7 +221,7 @@ services:
       - cf_credentials
 
   gitlab:
-    image: gitlab/gitlab-ce:18.10.3-ce.0
+    image: gitlab/gitlab-ce:18.11.3-ce.0
     container_name: gitlab
     shm_size: "512m"
     ulimits:
