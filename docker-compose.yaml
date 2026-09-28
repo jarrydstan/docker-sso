@@ -139,7 +139,7 @@ services:
       # - ./email/base.html:/authentik/stages/email/templates/email/base.html
       - ./current_email/:/authentik/stages/email/templates/email/
       # - ./current_email/:/authentik/stages/email/templates/email/
-    image: ghcr.io/goauthentik/server:2025.12
+    image: ghcr.io/goauthentik/server:2026.8
     container_name: authentik-sv
   worker:
     command: worker
@@ -155,7 +155,7 @@ services:
       - AUTHENTIK_POSTGRESQL__USER=${PG_USER}
       - AUTHENTIK_ERROR_REPORTING__ENABLED=true
       - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
-    image: ghcr.io/goauthentik/server:2025.12
+    image: ghcr.io/goauthentik/server:2026.8
     restart: unless-stopped
     healthcheck:
       test: "ak healthcheck"
@@ -227,14 +227,17 @@ services:
     image: gitlab/gitlab-ce:18.11.3-ce.0
     container_name: gitlab
     shm_size: "256m"
+    mem_limit: 8g
+    memswap_limit: 8g
     # ulimits:
     #   nofile:
     #     soft: 65535
     #     hard: 65535
     healthcheck:
-      test: ["CMD", "curl", "${GITLAB_URL}/-/health"]
-      retries: 3
-      start_period: 10s
+      test: ["CMD", "curl", "-fsS", "http://localhost/-/health"]
+      interval: 30s
+      retries: 5
+      start_period: 5m
       timeout: 10s
     ports:
       - "2424:22"
