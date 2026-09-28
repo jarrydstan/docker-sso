@@ -124,7 +124,7 @@ services:
       - "9443:9443"
     restart: unless-stopped
     healthcheck:
-      test: "curl http://localhost:9000/-/health/live"
+      test: "ak healthcheck"
       interval: 30s
       retries: 3
       start_period: 5s
