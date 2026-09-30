@@ -22,7 +22,7 @@ workflow:
 
 yamllint:
   stage: linting
-  image: registry.gitlab.com/pipeline-components/yamllint:0.35.9
+  image: registry.gitlab.com/pipeline-components/yamllint:0.35.13
   script:
     - yamllint -d relaxed .
 
