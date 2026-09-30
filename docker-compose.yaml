@@ -227,14 +227,22 @@ services:
     image: gitlab/gitlab-ce:18.11.3-ce.0
     container_name: gitlab
     shm_size: "256m"
-    mem_limit: 8g
-    memswap_limit: 8g
+    mem_limit: 12g
+    memswap_limit: 12g
     # ulimits:
     #   nofile:
     #     soft: 65535
     #     hard: 65535
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost/-/health"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "-fsS",
+          "--cacert",
+          "/etc/gitlab/ssl/gitlab-selfsigned.crt",
+          "https://localhost/-/health",
+        ]
       interval: 30s
       retries: 5
       start_period: 5m
@@ -242,26 +250,31 @@ services:
     ports:
       - "2424:22"
       - "80:80"
+      - "443:443"
     hostname: "gitlab"
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         external_url '$GITLAB_URL'
         gitlab_rails['gitlab_shell_ssh_port'] = 2424
         gitlab_rails['lfs_enabled'] = true
-        nginx['listen_port'] = 80
-        nginx['listen_https'] = false
+        letsencrypt['enable'] = false
+        nginx['listen_https'] = true
+        nginx['redirect_http_to_https'] = true
+        nginx['ssl_certificate'] = "/etc/gitlab/ssl/gitlab-selfsigned.crt"
+        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/gitlab-selfsigned.key"
+        puma['worker_processes'] = 4
+        puma['min_threads'] = 4
+        puma['max_threads'] = 4
+        puma['per_worker_max_memory_mb'] = 1200
+        gitlab_kas['enable'] = false
         prometheus_monitoring['enable'] = false
         alertmanager['enable'] = false
         node_exporter['enable'] = false
         redis_exporter['enable'] = false
         postgres_exporter['enable'] = false
         gitlab_exporter['enable'] = false
-        puma['worker_processes'] = 1
-        puma['min_threads'] = 2
-        puma['max_threads'] = 4
-        puma['per_worker_max_memory_mb'] = 700
         sidekiq['concurrency'] = 5
-        nginx['real_ip_trusted_addresses'] = [ '192.168.1.60', '2400:a842:c6d7:1:7492:f77f:c03b:b56f' ]
+        nginx['real_ip_trusted_addresses'] = [ '192.168.1.60', '2403:5810:f88:1::b7' ]
         nginx['real_ip_header'] = 'X-Forwarded-For'
         nginx['real_ip_recursive'] = 'on'
     volumes:
