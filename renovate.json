@@ -1,6 +1,36 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
+  "extends": ["config:recommended"],
+  "timezone": "Australia/Melbourne",
+  "platformAutomerge": true,
+  "automergeSchedule": ["* 0-5 * * *"],
+  "packageRules": [
+    {
+      "description": "Automerge non-major updates once CI passes (overnight only)",
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin", "pinDigest"],
+      "automerge": true
+    },
+    {
+      "description": "authentik feature releases are gated by the authentik-breaking-changes CI job",
+      "matchPackageNames": ["ghcr.io/goauthentik/server"],
+      "prBodyNotes": [
+        "If the `authentik-breaking-changes` job fails, read the release notes it prints, then add the `breaking-reviewed` label and start a new pipeline from the MR (MR > Pipelines > Run pipeline). Retrying the failed job keeps the old labels."
+      ]
+    },
+    {
+      "description": "GitLab is never tested in CI or auto-deployed; merge and update it by hand",
+      "matchPackageNames": ["gitlab/gitlab-ce"],
+      "automerge": false,
+      "labels": ["manual-deploy"],
+      "prBodyNotes": [
+        "GitLab is excluded from CI and from `deploy.sh`. After merging, update it on the host with `docker compose pull gitlab && docker compose up -d gitlab`."
+      ]
+    },
+    {
+      "description": "Keep the CI docker client and dind service on the same version",
+      "matchPackageNames": ["docker"],
+      "matchFileNames": [".gitlab-ci.yml"],
+      "groupName": "docker (CI)"
+    }
   ]
 }

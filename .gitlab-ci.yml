@@ -1,0 +1,81 @@
+stages:
+  - linting
+  - test
+  - deploy
+
+variables:
+  DOCKERSSO_PIPELINE_NAME: "Docker SSO pipeline"
+
+# Run for merge requests and for pushes to the default branch (post-merge).
+# No plain branch pipelines, so MRs don't get duplicate pipelines.
+workflow:
+  name: "$DOCKERSSO_PIPELINE_NAME"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      variables:
+        DOCKERSSO_PIPELINE_NAME: "MR !$CI_MERGE_REQUEST_IID: $CI_MERGE_REQUEST_TITLE"
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        DOCKERSSO_PIPELINE_NAME: "Deploy $CI_DEFAULT_BRANCH: $CI_COMMIT_SHORT_SHA"
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - when: never
+
+yamllint:
+  stage: linting
+  image: registry.gitlab.com/pipeline-components/yamllint:0.35.9
+  script:
+    - yamllint -d relaxed .
+
+# Blocks MRs that bump authentik across a feature release (YYYY.M) whose
+# release notes list breaking changes. Add the MR label "breaking-reviewed"
+# and start a new MR pipeline (retrying the job keeps the old labels).
+authentik-breaking-changes:
+  stage: linting
+  image: alpine:3.24
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - docker-compose.yaml
+  before_script:
+    - apk add --no-cache bash curl git >/dev/null
+  script:
+    - git fetch --depth=1 origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    - bash ci/check-authentik-breaking.sh FETCH_HEAD
+
+test-compose:
+  stage: test
+  image: docker:29.3.1
+  services:
+    - name: docker:29.3.1-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - until docker info >/dev/null 2>&1; do sleep 1; done
+  script:
+    - chmod +x ci.sh
+    - ./ci.sh
+
+# Deploys only after merge to the default branch. GitLab and certbot are
+# excluded by deploy.sh and must be updated manually on the host.
+deploy-compose:
+  stage: deploy
+  image: alpine:3.24
+  resource_group: production
+  environment:
+    name: production
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  before_script:
+    - apk add --no-cache openssh-client >/dev/null
+    - eval $(ssh-agent -s)
+    - chmod 400 "$SSH_PRIVATE_KEY"
+    - ssh-add "$SSH_PRIVATE_KEY"
+    - install -d -m 700 ~/.ssh
+    - cp "$SSH_KNOWN_HOSTS" ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    # The host's authorized_keys entry forces deploy.sh; the SHA is passed
+    # through as SSH_ORIGINAL_COMMAND.
+    - ssh "$DOCKER_REMOTE_HOST" "$CI_COMMIT_SHA"

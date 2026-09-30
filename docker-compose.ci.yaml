@@ -2,3 +2,10 @@ services:
   certbot:
     profiles:
       - prod
+  # GitLab is updated manually on the host, never in CI
+  gitlab:
+    profiles:
+      - prod
+  socket-proxy:
+    ports: !override
+      - "2376:2375"
