@@ -127,7 +127,9 @@ services:
       test: "ak healthcheck"
       interval: 30s
       retries: 3
-      start_period: 5s
+      # First boot and feature upgrades run DB migrations before the server answers
+      start_period: 5m
+      start_interval: 5s
       timeout: 10s
     volumes:
       - ./certs/live/$ROOT_DOMAIN:/certs/$ROOT_DOMAIN
@@ -139,12 +141,14 @@ services:
       # - ./email/base.html:/authentik/stages/email/templates/email/base.html
       - ./current_email/:/authentik/stages/email/templates/email/
       # - ./current_email/:/authentik/stages/email/templates/email/
-    image: ghcr.io/goauthentik/server:2026.8
+    image: ghcr.io/goauthentik/server:2026.8.3
     container_name: authentik-sv
   worker:
     command: worker
     depends_on:
       postgresql:
+        condition: service_healthy
+      server:
         condition: service_healthy
     env_file:
       - .env
@@ -155,10 +159,14 @@ services:
       - AUTHENTIK_POSTGRESQL__USER=${PG_USER}
       - AUTHENTIK_ERROR_REPORTING__ENABLED=true
       - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
-    image: ghcr.io/goauthentik/server:2026.8
+    image: ghcr.io/goauthentik/server:2026.8.3
     restart: unless-stopped
     healthcheck:
       test: "ak healthcheck"
+      interval: 30s
+      retries: 10
+      start_period: 30s
+      timeout: 30s
     user: root
     volumes:
       - ./data:/data
