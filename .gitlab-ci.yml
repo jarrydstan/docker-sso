@@ -44,9 +44,9 @@ authentik-breaking-changes:
 
 test-compose:
   stage: test
-  image: docker:29.8.1
+  image: docker:29.8.2
   services:
-    - name: docker:29.8.1-dind
+    - name: docker:29.8.2-dind
       alias: docker
   variables:
     DOCKER_HOST: tcp://docker:2375
